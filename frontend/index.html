@@ -9,41 +9,117 @@
 
 </head>
 
-<body>
-    <div class="w-screen h-10 bg-red-600 flex">
-        <div class="w-1/6 h-screen bg-green-200">
-            <div x-data="appFooterComponent()" x-init="init()">
-                <div>
-                    <div style="background-color: yellow" x-text="getTime()"></div>
-                    <div style="background-color: yellow" x-text="getDate()"></div>
+<body class="bg-black">
+    <div class="w-screen h-1 flex">
+        <div class="w-1/6 h-screen bg-black">
+            <div x-data="appFooterComponent()" x-init="do_init()">
+                <div class="flex items-center justify-center h-full">
+                    <div class="w-full text-8xl text-center font-bold text-white">
+                        <div x-text="getTime()"></div>
+
+                        <div class="h-20"></div>
+
+                        <div x-text="getDayName()"></div>
+                        <div x-text="getDate()"></div>
+
+                        <div class="h-20"></div>
+
+                        <div class="flex flex-row  items-center text-7xl">
+                            <svg class="h-20 w-20 mt-1 text-white" width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" />
+                                <path d="M10 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 0 0 -4 0v8.5" />
+                                <line x1="10" y1="9" x2="14" y2="9" />
+                            </svg>
+                            <div x-text="tempdata.temperature"></div>
+                        </div>
+
+                        <div class="flex flex-row  items-center text-7xl">
+                            <svg class="h-20 w-20 text-white" width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" />
+                                <path d="M8 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 0 0 -4 0v8.5" />
+                                <line x1="8" y1="9" x2="12" y2="9" />
+                                <line x1="16" y1="9" x2="22" y2="9" />
+                                <line x1="19" y1="6" x2="19" y2="12" />
+                            </svg>
+                            <div x-text="tempdata.maxtemperature"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-
         </div>
-        <div class="w-5/6 h-screen bg-blue-500">
-            Rest
+        <div class="w-5/6 h-screen bg-black flex justify-center items-center">
+            <img id="myImg" class="max-h-full" src="http://localhost:7001/image/">
         </div>
     </div>
 
     <script>
-
         function appFooterComponent() {
             return {
                 today: new Date(),
-                init() {
+                tempdata: {
+                    temperature: 0,
+                    maxtemperature: 0
+                },
+                do_init() {
                     setInterval(() => {
                         this.today = new Date();
                     }, 1000);
+                    setInterval(() => {
+                        this.getPhoto();
+                    }, 10000);
+                    setInterval(() => {
+                        this.getWeatherData();
+                    }, 2 * 60 * 1000);
+                    this.getPhoto();
+                    this.getWeatherData();
                 },
                 getTime() {
-                    var time = this.today.getHours() + ":" + this.today.getMinutes() + ":" + this.today.getSeconds();
+                    var time = ((this.today.getHours()).toString()).padStart(2, '0') + ":" + ((this.today.getMinutes()).toString()).padStart(2, '0');
                     return time
                 },
                 getDate() {
-                    var date = this.today.getFullYear() + '-' + (this.today.getMonth() + 1) + '-' + this.today.getDate();
+                    var date = this.today.toLocaleString('default', { month: 'long' }) + " " + this.today.getDate();
                     return date
                 },
+                getDayName(dateStr, locale) {
+                    return this.today.toLocaleDateString(locale, { weekday: 'long' }).substring(0, 3);;
+                },
+                getPhoto() {
+                    const imageUrl = "http://192.168.5.169:7001/image/";
+
+                    var myHeaders = new Headers();
+                    myHeaders.append('pragma', 'no-cache');
+                    myHeaders.append('cache-control', 'no-cache');
+
+                    var myInit = {
+                        method: 'GET',
+                        headers: myHeaders,
+                    };
+                    var myRequest = new Request(imageUrl);
+                    fetch(myRequest, myInit)
+                        .then(response => response.blob())
+                        .then(imageBlob => {
+                            const imageObjectURL = URL.createObjectURL(imageBlob);
+                            document.getElementById('myImg').src = imageObjectURL;
+                        });
+                },
+                getWeatherData() {
+                    // 1000 api calls per day
+                    let URL = "https://api.openweathermap.org/data/2.5/onecall?lat=52.23&lon=6.85&units=metric&appid=2f025c6c11a61b8a89399a9c02152708"
+                    fetch(URL)
+                        .then((response) => response.json())
+                        .then((data) => {
+                            this.tempdata.temperature = data.current.temp.toFixed(1);
+                            this.tempdata.maxtemperature = data.daily[0].temp.max.toFixed(1);
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                }
             }
         }
 

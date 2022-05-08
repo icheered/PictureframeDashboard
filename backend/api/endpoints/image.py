@@ -20,34 +20,56 @@ def get_paths(path: str):
 
 @router.get("/")
 def get_image():
-    dirs = None
-    with open(filename, 'r') as reader:
-        dirs = reader.read().splitlines()
-    if dirs is None:
-        return 404
-    chosendir = random.choice(dirs)
-    print(f"{chosendir}")
-    ret = random.choice(os.listdir(chosendir))
-    while not os.path.isfile(f"{chosendir}/{ret}"):
-        ret = random.choice(os.listdir(chosendir))
-    print(f"{chosendir}/{ret}")
-    return FileResponse(f"{chosendir}/{ret}")
+    files = None
+    with open(os.environ.get('filelist_name'), 'r') as reader:
+        files = reader.read().splitlines()
+    
+    blacklist = None
+    with open(os.environ.get('blacklist_name'), 'r') as reader:
+        blacklist = reader.read().splitlines()
+    
+    choice = random.choice(files)
+    while choice in blacklist:
+        print("Picture was on blacklist")
+        choice = random.choice(files)
+
+    return FileResponse(choice)
 
 filename = "image_dirlist.txt"
 
-@router.get("/dirs")
-def get_directories():
+@router.get("/files")
+def get_files():
     ret = None
-    with open(filename, 'r') as reader:
+    with open(os.environ.get('filelist_name'), 'r') as reader:
         ret = reader.read().splitlines()
     if ret is not None:
         return ret
     else:
         return 0
 
-@router.patch("/dirs")
-def update_directories():
-    dirlist = get_paths(directory)
-    with open(filename, 'w') as writer:
-        writer.write("\n".join(dirlist))
+@router.get("/blacklist")
+def get_blacklist_files():
+    ret = None
+    with open(os.environ.get('blacklist_name'), 'r') as reader:
+        ret = reader.read().splitlines()
+    if ret is not None:
+        return ret
+    else:
+        return 0
+
+
+@router.patch("/files")
+def update_files():
+    base_dir = os.environ.get('base_dir')
+    dirlist = get_paths(base_dir)
+    filelist = []
+    for d in dirlist:
+        for f in os.listdir(d):
+            if f.endswith(('.jpg', '.jpeg')):
+                filelist.append(os.path.join(d, f))
+    
+    with open(os.environ.get('filelist_name'), 'w') as writer:
+        writer.write("\n".join(filelist))
+    
+    return f"Photos detected: {len(filelist)}"
 

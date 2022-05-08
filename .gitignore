@@ -1,3 +1,7 @@
 .venv/
 __pycache__/
 node_modules/
+.env
+photolist.txt
+__photolist.txt
+blacklist.txt
