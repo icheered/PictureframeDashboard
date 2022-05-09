@@ -1,0 +1,14 @@
+version: "3.3"
+services:
+  pictureframe:
+    container_name: pictureframe
+    image: pictureframe
+    build:
+      context: '.'
+      dockerfile: './pictureframe.Dockerfile'
+    env_file: .env.docker
+    ports:
+      - 7001:7001
+    restart: unless-stopped
+    volumes:
+      - ${base_dir}:/files
