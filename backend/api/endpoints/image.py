@@ -20,13 +20,22 @@ def get_paths(path: str):
 
 @router.get("/")
 def get_image():
+
     files = None
-    with open(os.environ.get('filelist_name'), 'r') as reader:
-        files = reader.read().splitlines()
+    if os.environ.get('filelist_name') not in os.listdir():
+        with open(os.environ.get('filelist_name'), 'w+') as reader:
+            files = []
+    else:
+        with open(os.environ.get('filelist_name'), 'r') as reader:
+            files = reader.read().splitlines()
     
     blacklist = None
-    with open(os.environ.get('blacklist_name'), 'r') as reader:
-        blacklist = reader.read().splitlines()
+    if os.environ.get('blacklist_name') not in os.listdir():
+        with open(os.environ.get('blacklist_name'), 'w+') as reader:
+            blacklist = []
+    else:
+        with open(os.environ.get('blacklist_name'), 'r') as reader:
+            blacklist = reader.read().splitlines()
     
     choice = random.choice(files)
     while choice in blacklist:
@@ -39,21 +48,29 @@ filename = "image_dirlist.txt"
 
 @router.get("/files")
 def get_files():
-    ret = None
-    with open(os.environ.get('filelist_name'), 'r') as reader:
-        ret = reader.read().splitlines()
-    if ret is not None:
-        return ret
+    files = None
+    if os.environ.get('filelist_name') not in os.listdir():
+        with open(os.environ.get('filelist_name'), 'w+') as reader:
+            files = []
+    else:
+        with open(os.environ.get('filelist_name'), 'r') as reader:
+            files = reader.read().splitlines()
+    if files is not None:
+        return files
     else:
         return 0
 
 @router.get("/blacklist")
 def get_blacklist_files():
-    ret = None
-    with open(os.environ.get('blacklist_name'), 'r') as reader:
-        ret = reader.read().splitlines()
-    if ret is not None:
-        return ret
+    blacklist = None
+    if os.environ.get('blacklist_name') not in os.listdir():
+        with open(os.environ.get('blacklist_name'), 'w+') as reader:
+            blacklist = []
+    else:
+        with open(os.environ.get('blacklist_name'), 'r') as reader:
+            blacklist = reader.read().splitlines()
+    if blacklist is not None:
+        return blacklist
     else:
         return 0
 
