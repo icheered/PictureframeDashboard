@@ -42,12 +42,15 @@ app.include_router(
 
 @app.get("/")
 async def read_index():
-    return FileResponse('index.html')
+    return FileResponse(f"{os.environ.get('frontend_files')}/index.html")
 
 @app.get("/style.css")
-async def read_index():
-    return FileResponse('style.css')
+async def read_style():
+    return FileResponse(f"{os.environ.get('frontend_files')}/style.css")
 
+@app.get("/apikey")
+async def get_apikey():
+    return os.environ.get('openweathermap_apikey')
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=os.environ.get('backend_host'), port=int(os.environ.get('backend_port')), reload=True)

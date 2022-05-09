@@ -105,9 +105,11 @@
                             document.getElementById('myImg').src = imageObjectURL;
                         });
                 },
-                getWeatherData() {
+                async getWeatherData() {
                     // 1000 api calls per day
-                    let URL = "https://api.openweathermap.org/data/2.5/onecall?lat=52.23&lon=6.85&units=metric&appid=2f025c6c11a61b8a89399a9c02152708"
+                    let response = await fetch("http://0.0.0.0:7001/apikey");
+                    let apikey = await response.json();
+                    let URL = `https://api.openweathermap.org/data/2.5/onecall?lat=52.23&lon=6.85&units=metric&appid=${apikey}`;
                     fetch(URL)
                         .then((response) => response.json())
                         .then((data) => {
