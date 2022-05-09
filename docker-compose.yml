@@ -5,7 +5,7 @@ services:
     image: pictureframe
     build:
       context: '.'
-      dockerfile: './pictureframe.Dockerfile'
+      dockerfile: './Dockerfile'
     env_file: .env.docker
     ports:
       - 7001:7001
