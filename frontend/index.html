@@ -50,7 +50,7 @@
             </div>
         </div>
         <div class="w-5/6 h-screen bg-black flex justify-center items-center">
-            <img id="myImg" class="max-h-full" src="http://localhost:7001/image/">
+            <img id="myImg" class="max-h-full" src="http://192.168.5.99:7001/image/">
         </div>
     </div>
 
@@ -87,7 +87,7 @@
                     return this.today.toLocaleDateString(locale, { weekday: 'long' }).substring(0, 3);;
                 },
                 getPhoto() {
-                    const imageUrl = "http://0.0.0.0:7001/image/";
+                    const imageUrl = "http://192.168.5.99:7001/image/";
 
                     var myHeaders = new Headers();
                     myHeaders.append('pragma', 'no-cache');
@@ -107,7 +107,7 @@
                 },
                 async getWeatherData() {
                     // 1000 api calls per day
-                    let response = await fetch("http://0.0.0.0:7001/apikey");
+                    let response = await fetch("http://192.168.5.99:7001/apikey");
                     let apikey = await response.json();
                     let URL = `https://api.openweathermap.org/data/2.5/onecall?lat=52.23&lon=6.85&units=metric&appid=${apikey}`;
                     fetch(URL)
