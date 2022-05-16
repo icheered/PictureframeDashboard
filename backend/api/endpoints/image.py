@@ -1,12 +1,13 @@
 import os
 import random
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import FileResponse
+from tinydb import Query, TinyDB
+
+db = TinyDB("db.json")
 
 router = APIRouter()
-
-directory = '/home/tjbakker/STACK_TEST/Photography_Videography/Photography'
 
 def get_paths(path: str):
     retlist = []
@@ -20,60 +21,48 @@ def get_paths(path: str):
 
 @router.get("/")
 def get_image():
-
-    files = None
-    if os.environ.get('filelist_name') not in os.listdir():
-        with open(os.environ.get('filelist_name'), 'w+') as reader:
-            files = []
+    files = db.search(Query().files.exists())
+    if not len(files):
+        raise HTTPException(status_code=404, detail="No files found")
     else:
-        with open(os.environ.get('filelist_name'), 'r') as reader:
-            files = reader.read().splitlines()
-    
-    blacklist = None
-    if os.environ.get('blacklist_name') not in os.listdir():
-        with open(os.environ.get('blacklist_name'), 'w+') as reader:
-            blacklist = []
-    else:
-        with open(os.environ.get('blacklist_name'), 'r') as reader:
-            blacklist = reader.read().splitlines()
-    
-    choice = random.choice(files)
-    while choice in blacklist:
-        print("Picture was on blacklist")
-        choice = random.choice(files)
+        files = files[0]['files']
 
+    blacklist = db.search(Query().blacklist.exists())
+    blacklist = blacklist if not len(blacklist) else blacklist[0]['blacklist']
+
+    recent = db.search(Query().recent.exists())
+    recent = recent if not len(recent) else recent[0]['recent']
+    
+    while len(recent) > int(os.environ.get('repeat_limit')):
+        recent.pop(0)
+    
+    available = set(files) - set(blacklist) - set(recent)
+    if len(available) == 0:
+        raise HTTPException(status_code=400, detail="All available files are on the recent list or on blacklist. Try reducing the repeat_limit value.")
+
+    choice = random.choice(list(available))
+    recent.append(choice)
+    db.upsert({'recent': recent}, Query().recent.exists())
     return FileResponse(choice)
 
-filename = "image_dirlist.txt"
+@router.get("/single")
+def get_single_image(filename: str):
+    files = db.search(Query().files.exists())
+    if not len(files):
+        raise HTTPException(status_code=404, detail="No files found")
+    else:
+        files = files[0]['files']
+
+    if filename in files:
+        return FileResponse(filename)
+    else:
+        raise HTTPException(status_code=404, detail=f"File not found: {filename}")
+    
 
 @router.get("/files")
 def get_files():
-    files = None
-    if os.environ.get('filelist_name') not in os.listdir():
-        with open(os.environ.get('filelist_name'), 'w+') as reader:
-            files = []
-    else:
-        with open(os.environ.get('filelist_name'), 'r') as reader:
-            files = reader.read().splitlines()
-    if files is not None:
-        return files
-    else:
-        return 0
-
-@router.get("/blacklist")
-def get_blacklist_files():
-    blacklist = None
-    if os.environ.get('blacklist_name') not in os.listdir():
-        with open(os.environ.get('blacklist_name'), 'w+') as reader:
-            blacklist = []
-    else:
-        with open(os.environ.get('blacklist_name'), 'r') as reader:
-            blacklist = reader.read().splitlines()
-    if blacklist is not None:
-        return blacklist
-    else:
-        return 0
-
+    files = db.search(Query().files.exists())
+    return files if not len(files) else files[0]['files']
 
 @router.patch("/files")
 def update_files():
@@ -84,9 +73,39 @@ def update_files():
         for f in os.listdir(d):
             if f.endswith(('.jpg', '.jpeg')):
                 filelist.append(os.path.join(d, f))
-    
-    with open(os.environ.get('filelist_name'), 'w') as writer:
-        writer.write("\n".join(filelist))
+
+    db.upsert({'files': filelist}, Query().files.exists())
     
     return f"Photos detected: {len(filelist)}"
 
+@router.get("/blacklist")
+def get_blacklist():
+    blacklist = db.search(Query().blacklist.exists())
+    return blacklist if not len(blacklist) else blacklist[0]['blacklist']
+
+@router.post("/blacklist")
+def add_blacklist(filename: str):
+    blacklist = db.search(Query().blacklist.exists())
+    blacklist = blacklist if not len(blacklist) else blacklist[0]['blacklist']
+    if filename not in blacklist:
+        blacklist.append(filename)
+    db.upsert({'blacklist': blacklist}, Query().blacklist.exists())
+
+    return f"Adding file to blacklist: {filename}"
+
+@router.delete("/blacklist")
+def remove_blacklist(filename: str):
+    blacklist = db.search(Query().blacklist.exists())
+    blacklist = blacklist if not len(blacklist) else blacklist[0]['blacklist']
+    if filename in blacklist:
+        blacklist.remove(filename)
+    db.upsert({'blacklist': blacklist}, Query().blacklist.exists())
+    
+    return f"Removing file from blacklist: {filename}"
+
+
+
+@router.get("/recent")
+def get_recent():
+    recent = db.search(Query().recent.exists())
+    return recent if not len(recent) else recent[0]['recent']
